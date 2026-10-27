@@ -1,0 +1,10 @@
+# Суточная резервная копия (запускается таймером cormap-backup.timer).
+# Метки @...@ подставляет install.sh.
+[Unit]
+Description=Резервная копия коррозионных карт
+After=postgresql.service
+
+[Service]
+Type=oneshot
+Environment=CORMAP_ENV_FILE=@ETC_DIR@/cormap.env
+ExecStart=@APP_DIR@/deploy/backup.sh

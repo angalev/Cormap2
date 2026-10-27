@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="5mm" height="11mm" viewBox="0 0 5 11">
+<title>Автомобильная дорога</title>
+<rect x="0" y="0" width="5" height="11" rx="0.25" fill="#808080"/>
+<rect x="2.3" y="0.6" width="0.4" height="1.6" fill="#ffffff"/>
+<rect x="2.3" y="3.2" width="0.4" height="1.6" fill="#ffffff"/>
+<rect x="2.3" y="5.8" width="0.4" height="1.6" fill="#ffffff"/>
+<rect x="2.3" y="8.4" width="0.4" height="1.6" fill="#ffffff"/>
+</svg>

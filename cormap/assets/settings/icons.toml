@@ -1,0 +1,194 @@
+# Размеры и точки привязки значков (ТЗ, раздел 7).
+#
+# width_mm, height_mm - размер значка на бумаге в миллиметрах; не зависит от
+#   масштаба листа. Совпадают с размером viewBox одноимённого SVG.
+# anchor = [ax, ay] - точка привязки в долях размера значка от левого верхнего
+#   угла (y растёт вниз): [0.5, 1.0] - низ-центр (значок стоит над трубой),
+#   [0.5, 0.5] - центр (на трубе / пересечение), [0.5, 0.0] - верх-центр
+#   (значок висит под трубой). Привязка ставится на ось трубы в точке дистанции.
+# Для типов «поперёк трубы» и «участок под трубой» значок нужен прежде всего
+# для листа условных обозначений; геометрию на схеме рисует отрисовщик листа 2.
+# min_width_mm - необязательный ключ для типов с полосой под трубой: наименьшая
+#   ширина протяжённого объекта на бумаге, мм (ТЗ, 7.1). Если ключа нет, действует
+#   общий минимум min_extended_width_mm из layout.toml. У болота, леса и шурфа/поворота
+#   (рисуются целыми значками) минимум равен ширине одного значка.
+# Размеры подобраны по образцу листа 2 при печати A4 альбомный (297 мм).
+
+[kip]  # Контрольно-измерительный пункт, above
+width_mm = 4.0
+height_mm = 12.0
+anchor = [0.5, 1.0]
+
+[ukz]  # Станция катодной защиты, above
+width_mm = 5.0
+height_mm = 6.5
+anchor = [0.5, 1.0]
+
+[udz]  # Станция дренажной защиты, above
+width_mm = 5.0
+height_mm = 6.5
+anchor = [0.5, 1.0]
+
+[crane]  # Крановый узел, on
+width_mm = 4.0
+height_mm = 4.0
+anchor = [0.5, 0.5]
+
+[kzou]  # КЗОУ, КПОУ, above
+width_mm = 7.0
+height_mm = 4.5
+anchor = [0.5, 1.0]
+
+[vei]  # ВЭИ (ИФС), on
+width_mm = 6.0
+height_mm = 7.0
+anchor = [0.5, 0.5]
+
+[vl]  # Высоковольтная линия, cross_line
+width_mm = 4.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[cable]  # Кабельная линия, cross_line
+width_mm = 6.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[oil_pipe]  # Нефтепровод, cross_line
+width_mm = 6.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[water_pipe]  # Водопровод, cross_line
+width_mm = 6.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[gas_pipe]  # Газопровод, cross_line
+width_mm = 6.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[road]  # Автомобильная дорога, cross_band
+width_mm = 5.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[rail]  # Железная дорога, cross_band
+width_mm = 3.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[crossing]  # Переезд, cross_line
+width_mm = 5.0
+height_mm = 11.0
+anchor = [0.5, 0.5]
+
+[water]  # Водная преграда, area_below
+width_mm = 3.0
+height_mm = 11.0
+anchor = [0.5, 0.0]
+min_width_mm = 4.0
+
+[swamp]  # Болото, area_below
+width_mm = 8.0
+height_mm = 11.0
+anchor = [0.5, 0.0]
+min_width_mm = 8.0
+
+[forest]  # Лес, кусты, area_below
+width_mm = 8.0
+height_mm = 11.0
+anchor = [0.5, 0.0]
+min_width_mm = 8.0
+
+[pip]  # Повреждение ИП, above
+width_mm = 4.5
+height_mm = 4.1
+anchor = [0.5, 1.0]
+
+[picket]  # Пикет, above
+width_mm = 3.0
+height_mm = 6.0
+anchor = [0.5, 1.0]
+
+[vent]  # Свеча, above
+width_mm = 3.5
+height_mm = 7.0
+anchor = [0.5, 1.0]
+
+[bend]  # Отвод, above
+width_mm = 5.0
+height_mm = 5.0
+anchor = [0.5, 1.0]
+
+[grs]  # ГРС, above
+width_mm = 5.0
+height_mm = 5.0
+anchor = [0.5, 1.0]
+
+[ks]  # КС, above
+width_mm = 5.0
+height_mm = 5.0
+anchor = [0.5, 1.0]
+
+[surface_exit]  # Выход на поверхность, above
+width_mm = 4.0
+height_mm = 6.0
+anchor = [0.5, 1.0]
+
+[open_area]  # Открытый участок, area_below
+width_mm = 5.0
+height_mm = 7.0
+anchor = [0.5, 0.0]
+min_width_mm = 4.0
+
+[air_crossing]  # Воздушный переход, area_below
+width_mm = 6.0
+height_mm = 7.0
+anchor = [0.5, 0.0]
+min_width_mm = 5.0
+
+[casing]  # Кожух, cross_line
+width_mm = 5.0
+height_mm = 7.0
+anchor = [0.5, 0.5]
+
+[pit]  # Шурф, below
+width_mm = 4.0
+height_mm = 4.0
+anchor = [0.5, 0.0]
+min_width_mm = 4.0
+
+[turn_left]  # Поворот трассы влево, below
+width_mm = 5.0
+height_mm = 5.0
+anchor = [0.5, 0.0]
+min_width_mm = 5.0
+
+[turn_right]  # Поворот трассы вправо, below
+width_mm = 5.0
+height_mm = 5.0
+anchor = [0.5, 0.0]
+min_width_mm = 5.0
+
+[ravine]  # Овраг, below
+width_mm = 6.0
+height_mm = 4.0
+anchor = [0.5, 0.0]
+min_width_mm = 4.0
+
+[kip_nr]  # КИП нерабочий, above
+width_mm = 4.0
+height_mm = 12.0
+anchor = [0.5, 1.0]
+
+[ukz_nr]  # УКЗ нерабочая, above
+width_mm = 5.0
+height_mm = 6.5
+anchor = [0.5, 1.0]
+
+[udz_nr]  # УДЗ нерабочая, above
+width_mm = 5.0
+height_mm = 6.5
+anchor = [0.5, 1.0]

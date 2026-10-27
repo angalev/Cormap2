@@ -1,0 +1,14 @@
+{% extends "maps/base.html" %}
+{% block title %}Удаление карты — Коррозионные карты{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Удалить карту?</h1>
+  <p>Карта «{{ job.object_name }}» (файл {{ job.original_name }}) будет удалена вместе
+     с загруженной книгой и всеми результатами. Это нельзя отменить.</p>
+  <form method="post" class="actions">
+    {% csrf_token %}
+    <button type="submit" class="btn danger">Да, удалить</button>
+    <a class="btn" href="{% url 'map_detail' job.pk %}">Отмена</a>
+  </form>
+</section>
+{% endblock %}

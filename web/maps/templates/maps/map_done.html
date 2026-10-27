@@ -1,0 +1,96 @@
+{% extends "maps/base.html" %}
+{% load static maps_extras %}
+{% block title %}Карта — {{ job.object_name }}{% endblock %}
+{% block head %}
+{% if job.in_progress %}<noscript><meta http-equiv="refresh" content="5"></noscript>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row-between">
+  <h1>{{ job.object_name }}</h1>
+  <span class="badge {{ job.state|state_class }}" id="status-text">{{ job.status_text }}</span>
+</div>
+<p class="muted">Файл: {{ job.original_name }} · загружен {{ job.uploaded_at|date:"d.m.Y H:i" }}
+  {% if user.is_staff %}· владелец: {{ job.owner.get_username }}{% endif %}
+  {% if job.delete_after %}· будет удалена автоматически {{ job.delete_after|date:"d.m.Y" }}{% endif %}</p>
+
+{% if job.in_progress %}
+<section class="card" id="poller" data-url="{% url 'map_status' job.pk %}">
+  <p><strong>Идёт построение карты…</strong></p>
+  {# пока ни один лист не готов, полоса без значения: браузер показывает её бегущей #}
+  <progress id="progress-bar"{% if job.progress_done %} max="{{ job.progress_total|default:1 }}" value="{{ job.progress_done }}"{% endif %}></progress>
+  {% include "maps/_stall_hint.html" %}
+  <noscript><p>JavaScript выключен: страница обновляется раз в 5 секунд.</p></noscript>
+  {% include "maps/_cancel.html" with what="построение" label="Отменить построение" %}
+</section>
+{% endif %}
+
+{% if job.state == 'error' %}
+<section class="alert error" role="alert">
+  <p><strong>Не удалось построить карту.</strong> {{ job.error_text }}</p>
+</section>
+{% endif %}
+
+{% if job.state == 'done' %}
+<section class="card">
+  <h2>Файлы</h2>
+  <p class="files">
+    <a class="btn primary" href="{% url 'map_file_pdf' job.pk %}">Скачать PDF</a>
+    {% if job.png_dir %}<a class="btn" href="{% url 'map_file_zip' job.pk %}">Архив PNG</a>{% endif %}
+    {% if job.xlsx_path %}<a class="btn" href="{% url 'map_file_xlsx' job.pk %}">Excel с графиками</a>{% endif %}
+  </p>
+  <p class="muted">Участков: {{ info.sections }}, страниц в PDF: {{ info.pages }}.
+    Построено {{ job.built_at|date:"d.m.Y H:i" }}.</p>
+  {% if info.warnings %}
+  <details>
+    <summary>Предупреждения построения ({{ info.warnings_total }})</summary>
+    <ul class="issues scroll">
+      {% for w in info.warnings %}<li class="issue warning">{{ w }}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</section>
+
+{% if preview_sections %}
+<section class="card">
+  <h2>Предпросмотр листов</h2>
+  <p class="muted">Уменьшенные копии; по щелчку открывается полный размер.</p>
+  {% for n in preview_sections %}
+  <div class="preview-row">
+    <h3>Участок {{ n }}</h3>
+    <div class="preview-pair">
+      {% for k in '12' %}
+      <figure>
+        <a href="{% url 'map_preview' job.pk n forloop.counter %}?full=1" target="_blank" rel="noopener">
+          <img loading="lazy" src="{% url 'map_preview' job.pk n forloop.counter %}"
+               alt="Участок {{ n }}, лист {{ forloop.counter }}">
+        </a>
+        <figcaption>Лист {{ forloop.counter }}</figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  {% if preview_page.paginator.num_pages > 1 %}
+  <p class="pager">
+    {% if preview_page.has_previous %}<a href="?page={{ preview_page.previous_page_number }}">← назад</a>{% endif %}
+    Страница {{ preview_page.number }} из {{ preview_page.paginator.num_pages }}
+    {% if preview_page.has_next %}<a href="?page={{ preview_page.next_page_number }}">вперёд →</a>{% endif %}
+  </p>
+  {% endif %}
+</section>
+{% endif %}
+{% endif %}
+
+{% if is_owner and not job.in_progress %}
+<section class="actions">
+  {% if can_rebuild %}
+  <form method="post" action="{% url 'map_rebuild' job.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn">Перестроить с другим разбиением</button>
+  </form>
+  {% endif %}
+  <a class="btn" href="{% url 'map_delete' job.pk %}">Удалить карту</a>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if job.in_progress %}<script src="{% static 'maps/poll.js' %}"></script>{% endif %}{% endblock %}

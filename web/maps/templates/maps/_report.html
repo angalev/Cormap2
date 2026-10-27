@@ -1,0 +1,138 @@
+{% load maps_extras %}
+{# Отчёт проверки: сводка блоков, замечания, таблица распознавания #}
+{# Обработка данных модулем refinery (ТЗ, 4.5): показывается, если шаг выполнялся #}
+{% if result.refinery %}
+{% with r=result.refinery %}
+<section class="card">
+  <h2>Обработка данных</h2>
+  {% if r.ok %}
+  <p>Книга обработана модулем предварительной обработки; проверка и построение идут по обработанной книге.</p>
+  {% else %}
+  <p class="issue error">Ошибка обработки данных [{{ r.error_code }}]: {{ r.error_message }}</p>
+  {% endif %}
+  <table class="grid compact">
+    <tbody>
+      <tr><th>Выставленные флажки</th><td>{% for l in r.labels %}{{ l }}{% if not forloop.last %}; {% endif %}{% empty %}нет{% endfor %}</td></tr>
+      <tr><th>Шаг интерполяции, м</th><td class="num">{{ r.step }}</td></tr>
+      {% if r.stats %}
+      <tr><th>Строк на входе</th><td class="num">{{ r.stats.input_rows|ru_num }}</td></tr>
+      <tr><th>Строк на выходе</th><td class="num">{{ r.stats.output_rows|ru_num }}</td></tr>
+      <tr><th>Диапазон дистанций, м</th><td class="num">{% if r.stats.distance_range_m.1 is not None %}{{ r.stats.distance_range_m.0|ru_num }} — {{ r.stats.distance_range_m.1|ru_num }}{% else %}{{ r.stats.distance_range_m|ru_num }}{% endif %}</td></tr>
+      <tr><th>Время обработки, мс</th><td class="num">{{ r.stats.calculation_time_ms|ru_num }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+{% endwith %}
+{% endif %}
+
+<section class="card">
+  <h2>Сводка по блокам данных</h2>
+  {% if blocks %}
+  <table class="grid compact">
+    <thead><tr><th>Блок</th><th>Строк</th><th>Дистанция, м</th><th>Шаг, м</th><th>Примечание</th></tr></thead>
+    <tbody>
+    {% for b in blocks %}
+      <tr>
+        <td>{{ b.name }}</td>
+        <td class="num">{{ b.rows }}</td>
+        {% if b.rows %}
+        <td class="num">{{ b.dist_min|ru_num }} — {{ b.dist_max|ru_num }}</td>
+        <td class="num">{{ b.step|ru_num }}</td>
+        {% else %}
+        <td colspan="2" class="muted">нет данных</td>
+        {% endif %}
+        <td>{{ b.details }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Сводки нет: книга не прочитана.</p>
+  {% endif %}
+  {% if result.dist_range %}
+  <p class="muted">Общий диапазон дистанций: {{ result.dist_range.0|ru_num }} — {{ result.dist_range.1|ru_num }} м.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Замечания</h2>
+  <p>Ошибок: <strong>{{ errors_total }}</strong>, предупреждений: <strong>{{ warnings_total }}</strong>.</p>
+  {% if errors %}
+  <h3>Ошибки (блокируют построение)</h3>
+  <ul class="issues">
+    {% for i in errors %}
+    <li class="issue error">{% if i.cell %}<code>{{ i.cell }}</code> {% elif i.row %}<code>строка {{ i.row }}</code> {% endif %}{{ i.message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if warnings %}
+  <h3>Предупреждения</h3>
+  <ul class="issues scroll">
+    {% for i in warnings %}
+    <li class="issue warning">{% if i.cell %}<code>{{ i.cell }}</code> {% elif i.row %}<code>строка {{ i.row }}</code> {% endif %}{{ i.message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if not errors and not warnings %}<p class="muted">Замечаний нет.</p>{% endif %}
+</section>
+
+{% if notes %}
+<section class="card">
+  <h2>Разбор комментариев</h2>
+  <p>Распознано: <strong>{{ notes.recognized }}</strong>, не распознано:
+     <strong>{{ notes.unknown }}</strong>, непарных «начало/конец»: <strong>{{ notes.unpaired }}</strong>.</p>
+
+  {% if bad_records or unpaired %}
+  <div class="attention">
+    <h3>Требуют внимания</h3>
+    {% if bad_records %}
+    <p>Не распознанные пометки ({{ bad_records_total }}):</p>
+    <table class="grid compact">
+      <thead><tr><th>Строка</th><th>Дистанция, м</th><th>Пометка</th></tr></thead>
+      <tbody>
+      {% for r in bad_records %}
+        <tr class="bad"><td class="num">{{ r.row }}</td><td class="num">{{ r.dist|ru_num }}</td><td>{{ r.text }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if bad_records_total > bad_records|length %}<p class="muted">Показаны первые {{ bad_records|length }}.</p>{% endif %}
+    {% endif %}
+    {% if unpaired %}
+    <p>Непарные «начало/конец»:</p>
+    <ul class="issues">
+      {% for i in unpaired %}
+      <li class="issue warning">{% if i.row %}<code>строка {{ i.row }}</code> {% endif %}{{ i.message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <details {% if request.GET.rp %}open{% endif %}>
+    <summary>Все пометки: строка — пометка — как распознана ({{ records_total }})</summary>
+    {% if records_total %}
+    <table class="grid compact">
+      <thead><tr><th>Строка</th><th>Дистанция, м</th><th>Пометка</th><th>Как распознана</th></tr></thead>
+      <tbody>
+      {% for r in records_page %}
+        <tr{% if not r.recognized %} class="bad"{% endif %}>
+          <td class="num">{{ r.row }}</td><td class="num">{{ r.dist|ru_num }}</td>
+          <td>{{ r.text }}</td><td>{{ r.what }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if records_page.paginator.num_pages > 1 %}
+    <p class="pager">
+      {% if records_page.has_previous %}<a href="?rp={{ records_page.previous_page_number }}">← назад</a>{% endif %}
+      Страница {{ records_page.number }} из {{ records_page.paginator.num_pages }}
+      {% if records_page.has_next %}<a href="?rp={{ records_page.next_page_number }}">вперёд →</a>{% endif %}
+    </p>
+    {% endif %}
+    {% else %}
+    <p class="muted">Пометок нет.</p>
+    {% endif %}
+  </details>
+</section>
+{% endif %}

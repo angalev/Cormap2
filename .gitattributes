@@ -1,0 +1,11 @@
+* text=auto
+
+# на сервере Linux: только LF, иначе сценарии и юниты не работают (tests/test_bundle.py)
+deploy/** text eol=lf
+manage.py text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+*.xlsx binary
+*.docx binary
+*.png binary

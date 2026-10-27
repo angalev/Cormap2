@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Обёртка над manage.py: выполняет команду Django от пользователя cormap в окружении
+# служб (настройки берутся из env-файла). Ставится в /usr/local/bin/cormap-manage;
+# метки @...@ подставляет install.sh. Пример: cormap-manage createsuperuser
+set -euo pipefail
+
+ENV_FILE="@ETC_DIR@/cormap.env"
+APP_DIR="@APP_DIR@"
+
+# env-файл читает только root и группа cormap: из-под обычной учётной записи повышаем права
+if [ "$(id -u)" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
+
+set -a
+# shellcheck disable=SC1090
+. "$ENV_FILE"
+set +a
+
+cd "$APP_DIR"
+exec runuser -u cormap -- env HOME="$CORMAP_DATA_DIR" \
+    "$APP_DIR/.venv/bin/python" "$APP_DIR/manage.py" "$@"

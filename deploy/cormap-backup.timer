@@ -1,0 +1,10 @@
+# Раз в сутки в 03:30; если сервер был выключен, копия делается при следующем запуске.
+[Unit]
+Description=Суточная резервная копия коррозионных карт
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,28 @@
+{# Блок «Обработка данных» (ТЗ, 4.5): показывается, только если шаг включён #}
+{% if form.refinery_on %}
+{% load static %}
+<fieldset id="refinery-params" class="refinery">
+  <legend>Обработка данных</legend>
+  <p class="hint">Данные берутся с листа Template. Без флажков книга не обрабатывается и сразу идёт
+    на проверку и построение; с флажками она сначала проходит обработку.
+    Несовместимые флажки переключаются сами; «выкл (генератор)» и «выкл (0.8…)» требуют своего «вкл».</p>
+  <div class="grid2">
+    {% for title, flags in form.refinery_groups %}
+    <fieldset class="refinery-group">
+      <legend>{{ title }}</legend>
+      {% for f in flags %}
+      <div class="field check{% if f.errors %} has-error{% endif %}">
+        <label for="{{ f.id_for_label }}" class="checkbox">{{ f }} {{ f.label }}</label>
+        {% for e in f.errors %}<small class="err">{{ e }}</small>{% endfor %}
+      </div>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+    <fieldset class="refinery-group">
+      <legend>Интерполяция</legend>
+      {% include "maps/field.html" with field=form.step hint="Целое число от 1 до 10, по умолчанию 5." %}
+    </fieldset>
+  </div>
+</fieldset>
+<script src="{% static 'maps/refinery.js' %}" defer></script>
+{% endif %}

@@ -1,0 +1,60 @@
+{% extends "maps/base.html" %}
+{% block title %}Новая карта — Коррозионные карты{% endblock %}
+{% block content %}
+<h1>Новая карта</h1>
+<form method="post" enctype="multipart/form-data" class="form">
+  {% csrf_token %}
+  {% if upload_error %}
+  <div class="alert error" role="alert"><p>{{ upload_error }}</p></div>
+  {% endif %}
+  {% if form.non_field_errors %}
+  <div class="alert error" role="alert">
+    {% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  <fieldset>
+    <legend>Книга</legend>
+    {% include "maps/field.html" with field=form.book hint="Только .xlsx, до 50 МБ." %}
+    {% include "maps/_attached_book.html" %}
+    <p class="hint"><a href="{% url 'template_download' %}">Скачать шаблон книги</a></p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Объект и нормативы</legend>
+    {% include "maps/field.html" with field=form.object_name %}
+    <div class="grid2">
+      {% include "maps/field.html" with field=form.diameter_mm %}
+      {% include "maps/field.html" with field=form.start_km hint="Подписи оси: км = начальный км + дистанция / 1000." %}
+      {% include "maps/field.html" with field=form.u_min %}
+      {% include "maps/field.html" with field=form.u_max %}
+      {% include "maps/field.html" with field=form.depth_min %}
+      {% include "maps/field.html" with field=form.res_low hint="Ниже — высокая агрессивность." %}
+      {% include "maps/field.html" with field=form.res_high hint="От этого значения — низкая агрессивность." %}
+      {% include "maps/field.html" with field=form.res_axis_max hint="Пусто — ось подбирается по данным участка." %}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Оформление</legend>
+    <div class="grid2">
+      {% include "maps/field.html" with field=form.paper %}
+      {% include "maps/field.html" with field=form.legend %}
+    </div>
+  </fieldset>
+
+  {% include "maps/_refinery_fields.html" %}
+
+  <fieldset id="extra-params" class="extra">
+    <legend>Дополнительные параметры</legend>
+    {# Заготовка для будущих чекбоксов (ТЗ, раздел 3, п. 2). #}
+    {# Чекбоксы добавлять сюда: поле в NewMapForm и include шаблона maps/field.html. #}
+  </fieldset>
+
+  <p class="hint">Числа можно вводить и с запятой, и с точкой. Разбиение на листы — на следующем шаге, после проверки.</p>
+  <div class="actions">
+    <button type="submit" class="btn primary">Проверить</button>
+    <a class="btn" href="{% url 'map_list' %}">Отмена</a>
+  </div>
+</form>
+{% endblock %}

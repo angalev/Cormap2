@@ -1,0 +1,16 @@
+# Сокет сайта коррозионных карт: его создаёт systemd и передаёт gunicorn
+# (cormap-web.service). Владелец - nginx (www-data), остальным учётным записям сервера
+# сокет недоступен: обратиться к сайту в обход nginx (и подставить чужой адрес в
+# X-Forwarded-For) нельзя.
+[Unit]
+Description=Сокет сайта коррозионных карт
+
+[Socket]
+ListenStream=/run/cormap/gunicorn.sock
+SocketUser=www-data
+SocketGroup=www-data
+SocketMode=0600
+DirectoryMode=0755
+
+[Install]
+WantedBy=sockets.target

@@ -1,0 +1,37 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Коррозионные карты{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'maps/style.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{% url 'map_list' %}">Коррозионные карты</a>
+  {% if user.is_authenticated %}
+  <nav>
+    <a href="{% url 'map_list' %}">Мои карты</a>
+    <a href="{% url 'map_new' %}">Новая карта</a>
+    <a href="{% url 'forecast' %}">Калькулятор ЭХЗ</a>
+    {% if user.is_staff and request.admin_allowed %}<a href="/admin/">Администрирование</a>{% endif %}
+  </nav>
+  <form class="logout" method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <a class="who" href="{% url 'password_change' %}" title="Сменить пароль">{{ user.get_username }}</a>
+    <button type="submit" class="link">Выйти</button>
+  </form>
+  {% endif %}
+</header>
+<main>
+  {% if messages %}
+  <ul class="messages">
+    {% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="6mm" height="7mm" viewBox="0 0 6 7">
+<title>Воздушный переход</title>
+<path d="M1.5,0.3 V6.7 M4.5,0.3 V6.7" stroke="#404040" stroke-width="0.45" fill="none"/>
+<polygon points="0.4,2.1 1.5,0.3 2.6,2.1" fill="#404040"/>
+<polygon points="3.4,2.1 4.5,0.3 5.6,2.1" fill="#404040"/>
+<polygon points="0.4,6.7 1.5,4.9 2.6,6.7" fill="#404040"/>
+<polygon points="3.4,6.7 4.5,4.9 5.6,6.7" fill="#404040"/>
+</svg>

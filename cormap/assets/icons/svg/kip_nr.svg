@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4mm" height="12mm" viewBox="0 0 4 12">
+<title>КИП нерабочий</title>
+<path d="M0.2,3.2 V1.9 L1.1,0.3 H2.9 L3.8,1.9 V3.2 Z" fill="#808080"/>
+<rect x="0.2" y="3.0" width="3.6" height="8.8" fill="#ffffff" stroke="#808080" stroke-width="0.35"/>
+<rect x="1.2" y="4.0" width="1.6" height="1.9" fill="#808080"/>
+<rect x="1.2" y="7.6" width="1.6" height="3.6" fill="#c8c8c8" stroke="#000000" stroke-width="0.2"/>
+<path d="M0.3,3.4 L3.7,11.6 M3.7,3.4 L0.3,11.6" stroke="#e00000" stroke-width="0.4" fill="none"/>
+</svg>

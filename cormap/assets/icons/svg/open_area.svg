@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="5mm" height="7mm" viewBox="0 0 5 7">
+<title>Открытый участок</title>
+<rect x="0.3" y="0.3" width="4.4" height="6.4" fill="#f4e3c8" stroke="#8b5a2b" stroke-width="0.35" stroke-dasharray="0.8 0.5"/>
+<path d="M0.3,2.4 L4.7,0.3 M0.3,4.6 L4.7,2.5 M0.3,6.7 L4.7,4.6" stroke="#8b5a2b" stroke-width="0.2" fill="none"/>
+</svg>

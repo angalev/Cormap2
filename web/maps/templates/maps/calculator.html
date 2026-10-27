@@ -1,0 +1,252 @@
+{% load static %}{# Собрано из starter/Калькулятор ЭХЗ.html (tools/port_calculator.py). Не править руками. #}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Расчёт сопротивлений подземного газопровода</title>
+  <link rel="stylesheet" href="{% static 'maps/calculator.css' %}">
+</head>
+<body>
+<header><h1>Калькулятор электрических сопротивлений газопровода</h1><p>Нормативное старение покрытия · продольное сопротивление · переходное сопротивление по потенциальной диаграмме</p><p class="site-back"><a href="{% url 'map_list' %}">← Коррозионные карты</a></p></header>
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>1. Паспорт участка и геометрия трубы</h2>
+      <div class="fields">
+        <label>Наименование участка<input id="name" value="Участок МГ"></label>
+        <label>Год ввода / переизоляции<input id="yearStart" type="number" min="1900" max="2200" value="2005"></label>
+        <label>Год обследования<input id="yearSurvey" type="number" min="1900" max="2200" value="2026"></label>
+        <label>Наружный диаметр D, <span class="unit">мм</span><input id="diameter" type="number" min="1" step="0.1" value="1020"></label>
+        <label>Толщина стенки δ, <span class="unit">мм</span><input id="thickness" type="number" min="0.1" step="0.1" value="12"></label>
+        <label>Марка / группа стали<select id="steel">
+          <optgroup label="Углеродистые конструкционные стали, 20 °C">
+            <option value="s08kp" data-rho="1.30e-7">Сталь 08кп — 0,130 Ом·мм²/м</option>
+            <option value="s08" data-rho="1.42e-7">Сталь 08 — 0,142 Ом·мм²/м</option>
+            <option value="s10" data-rho="1.40e-7">Сталь 10 — 0,140 Ом·мм²/м</option>
+            <option value="s20" data-rho="1.69e-7">Сталь 20 — 0,169 Ом·мм²/м</option>
+            <option value="s40" data-rho="1.71e-7">Сталь 40 — 0,171 Ом·мм²/м</option>
+          </optgroup>
+          <optgroup label="Трубные стали по отраслевой таблице">
+            <option value="g245" data-rho="2.45e-7" selected>17ГС, 17Г1С, 17Г2СФ, 08Г2СФ / неизвестна — 0,245</option>
+            <option value="g218" data-rho="2.18e-7">18Г2, Ст3 — 0,218 Ом·мм²/м</option>
+            <option value="g263" data-rho="2.63e-7">18Г2САФ, 18ХГ2САФ — 0,263 Ом·мм²/м</option>
+            <option value="g281" data-rho="2.81e-7">15ГСТЮ — 0,281 Ом·мм²/м</option>
+          </optgroup>
+          <optgroup label="Дополнительные справочные значения">
+            <option value="s09g2s" data-rho="1.30e-7">09Г2С — 0,130 Ом·мм²/м (уточнить по документации)</option>
+            <option value="legacy135" data-rho="1.35e-7">Таблица IV.4 — 0,135 Ом·мм²/м</option>
+          </optgroup>
+          <option value="custom">Другое значение</option>
+        </select></label>
+        <label>ρ стали, <span class="unit">Ом·м</span><input id="steelRho" type="number" step="any" value="2.45e-7"></label>
+        <label>ρ стали, <span class="unit">Ом·мм²/м</span><input id="steelRhoMm" readonly value="0,245"></label>
+        <label>Глубина до оси H, <span class="unit">м</span><input id="depth" type="number" min="0.01" step="0.01" value="1.5"></label>
+      </div>
+      <p class="small">Удельное сопротивление зависит от состава, состояния и температуры металла. Для официального расчёта приоритет имеют сертификат трубы, исполнительная документация или значение, предписанное применяемой методикой.</p>
+      <div id="baseError" class="error"></div>
+    </section>
+
+    <section class="card half">
+      <h2>2. Нормативное сопротивление покрытия</h2>
+      <div class="fields two">
+        <label>Методика коэффициентов<select id="normMethod"><option value="rg">Р Газпром 9.4-013-2011</option><option value="gost58094">ГОСТ Р 58094-2018</option><option value="custom">Пользовательские значения</option></select></label>
+        <label>Тип защитного покрытия<select id="coating"></select></label>
+        <label>Начальное Rиз0, <span class="unit">Ом·м²</span><input id="r0" type="number" min="0" step="any"></label>
+        <label>Коэффициент γ, <span class="unit">1/год</span><input id="gamma" type="number" min="0" step="any"></label>
+        <label>Предельное сопротивление, <span class="unit">Ом·м²</span><input id="rLimit" type="number" min="0" step="any" value="400"></label>
+      </div>
+      <div class="formula">R<sub>норм</sub>(t) = R<sub>из0</sub> · exp(−γt), &nbsp; t = год обследования − год ввода покрытия</div>
+      <div class="actions"><button class="btn" id="calcNorm">Рассчитать норматив</button></div>
+      <div id="normError" class="error"></div>
+      <div class="result-grid mt14">
+        <div class="metric"><span>Возраст покрытия</span><strong id="ageOut">—</strong></div>
+        <div class="metric"><span>Rнорм на обследование</span><strong id="rNormOut">—</strong></div>
+        <div class="metric"><span>Расчётный срок до предела</span><strong id="lifeOut">—</strong></div>
+        <div class="metric"><span>Запас до предела</span><strong id="remainingOut">—</strong></div>
+      </div>
+    </section>
+
+    <section class="card half">
+      <h2>3. Продольное сопротивление трубы</h2>
+      <div class="formula">R<sub>т</sub> = ρ<sub>т</sub> / [π(D − δ)δ], &nbsp; Ом/м</div>
+      <p class="note">Расчётная таблица строится для стандартных диаметров и толщин по той же зависимости, которая использована в приложении А СТО Газпром 2-3.5-047-2006. Выбранная ячейка соответствует введённым D и δ.</p>
+      <div class="actions"><button class="btn" id="calcLong">Рассчитать Rт</button><button class="btn secondary" id="toggleTable">Показать таблицу</button></div>
+      <div id="longError" class="error"></div>
+      <div class="result-grid mt14">
+        <div class="metric"><span>Точное расчётное Rт</span><strong id="rtOut">—</strong></div>
+        <div class="metric"><span>Rт × 10⁶</span><strong id="rtMicroOut">—</strong></div>
+        <div class="metric"><span>Площадь металла сечения</span><strong id="areaOut">—</strong></div>
+        <div class="metric"><span>Ближайшая табличная пара</span><strong id="nearestOut">—</strong></div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="longTableCard">
+      <h2>Расчётная таблица Rт × 10⁶, Ом/м</h2><div class="table-wrap"><table id="longTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Переходное сопротивление</h2>
+      <div class="tabs input-only"><button class="tab active" data-panel="integralPanel">Потенциальная диаграмма и итерации</button><button class="tab" data-panel="measuredPanel">Из измеренного Rп</button><button class="tab" data-panel="bandPanel">Локально в шурфе</button></div>
+
+      <div id="integralPanel" class="panel active">
+        <p class="note">Введите точки левой и правой ветвей. Формат строки: <b>расстояние; наложенный потенциал</b> либо <b>расстояние; потенциал ВКЛ; естественный/ВЫКЛ</b>. Расстояние — от точки дренажа, м. Программа вычисляет S = ∫ΔU(x)dx методом трапеций.</p>
+        <div class="fields three">
+          <label>Ток в точке дренажа I, <span class="unit">А</span><input id="drainCurrent" type="number" min="0" step="any" value="10"></label>
+          <label>Точность сходимости<input id="tolerance" type="number" min="1e-12" step="any" value="1e-8"></label>
+          <label>Максимум итераций<input id="maxIter" type="number" min="1" step="1" value="500"></label>
+        </div>
+        <div class="fields two mt12">
+          <label>Левая ветвь<textarea id="leftData">0; 1.80
+1000; 1.20
+2000; 0.78
+3000; 0.48
+4000; 0.25</textarea></label>
+          <label>Правая ветвь<textarea id="rightData">0; 1.80
+1000; 1.28
+2000; 0.86
+3000; 0.55
+4000; 0.31</textarea></label>
+        </div>
+        <canvas id="chart" width="1100" height="230"></canvas>
+        <div class="formula mt12">α<sub>i</sub> = I·R<sub>т</sub>(1−e<sup>−αᵢLᵢ</sup>) / [S<sub>i</sub>(α<sub>л</sub>+α<sub>п</sub>)]; &nbsp; R′<sub>п,i</sub> = πD·R<sub>т</sub>/α<sub>i</sub>²</div>
+        <div class="actions"><button class="btn" id="calcIntegral">Интегрировать и решить</button><button class="btn secondary" id="loadExample">Контрольный пример</button></div>
+        <div id="integralError" class="error"></div>
+        <div class="result-grid mt14">
+          <div class="metric"><span>Sл / Sп, В·м</span><strong id="sOut">—</strong></div>
+          <div class="metric"><span>αл / αп, 1/м</span><strong id="alphaOut">—</strong></div>
+          <div class="metric"><span>R′п левой ветви</span><strong id="rplOut">—</strong></div>
+          <div class="metric"><span>R′п правой ветви</span><strong id="rprOut">—</strong></div>
+          <div class="metric"><span>Среднее интегральное R′п</span><strong id="rpAvgOut">—</strong></div>
+          <div class="metric"><span>Сходимость</span><strong id="convOut">—</strong></div>
+          <div class="metric"><span>Сравнение с Rнорм</span><strong id="integralStatus">—</strong></div>
+          <div class="metric"><span>Сравнение с пределом</span><strong id="limitStatus">—</strong></div>
+        </div>
+      </div>
+
+      <div id="measuredPanel" class="panel">
+        <div class="fields three">
+          <label>Измеренное переходное Rп, <span class="unit">Ом·м²</span><input id="measuredRp" type="number" min="0" step="any" value="5000"></label>
+          <label>Среднее ρ грунта, <span class="unit">Ом·м</span><input id="soilRho" type="number" min="0" step="any" value="50"></label>
+          <label>Способ учёта растекания<select id="spreadMode"><option value="calc">Рассчитать по приложению А</option><option value="zero">Принять Rр = 0</option><option value="manual">Задать вручную</option></select></label>
+          <label>Rр вручную, <span class="unit">Ом·м²</span><input id="manualSpread" type="number" min="0" step="any" value="0"></label>
+        </div>
+        <div class="formula">R<sub>из</sub> = R<sub>п</sub> − R<sub>р</sub>; &nbsp; R<sub>р</sub> = ρ<sub>г</sub>D/2 · ln[0,4R<sub>п</sub>/(D²HR<sub>т</sub>)]</div>
+        <div class="actions"><button class="btn" id="calcMeasured">Рассчитать покрытие</button></div><div id="measuredError" class="error"></div>
+        <div class="result-grid mt14"><div class="metric"><span>Сопротивление растеканию Rр</span><strong id="spreadOut">—</strong></div><div class="metric"><span>Сопротивление покрытия Rиз</span><strong id="rIsoOut">—</strong></div><div class="metric"><span>Отношение Rиз/Rнорм</span><strong id="ratioOut">—</strong></div><div class="metric"><span>Оценка</span><strong id="measuredStatus">—</strong></div></div>
+      </div>
+
+      <div id="bandPanel" class="panel">
+        <div class="fields three"><label>Напряжение на покрытии U, <span class="unit">В</span><input id="bandU" type="number" min="0" step="any" value="30"></label><label>Ток I1, <span class="unit">А</span><input id="bandI1" type="number" min="0" step="any" value="0.002"></label><label>Ток утечки I2, <span class="unit">А</span><input id="bandI2" type="number" min="0" step="any" value="0.0002"></label><label>Ширина бандажа, <span class="unit">м</span><input id="bandWidth" type="number" min="0" step="any" value="0.4"></label></div>
+        <div class="formula">F = πD·b; &nbsp; R = U·F/(I₁−I₂)</div><div class="actions"><button class="btn" id="calcBand">Рассчитать в шурфе</button></div><div id="bandError" class="error"></div>
+        <div class="result-grid mt14"><div class="metric"><span>Площадь электрода F</span><strong id="bandAreaOut">—</strong></div><div class="metric"><span>Переходное сопротивление</span><strong id="bandROut">—</strong></div><div class="metric"><span>Отношение к Rнорм</span><strong id="bandRatioOut">—</strong></div><div class="metric"><span>Оценка</span><strong id="bandStatus">—</strong></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. Коррозионный прогноз</h2>
+      <p class="note">Программа независимо определяет скорости несколькими способами. Для консервативного прогноза принимается максимальная положительная скорость. Ниже можно предварительно рассчитать минимально допустимую толщину прямого участка по внутреннему давлению и передать её в прогноз.</p>
+      <h3>Расчёт минимально допустимой толщины прямой трубы</h3>
+      <div class="fields">
+        <label>Режим расчёта<select id="allowMethod"><option value="operating">Эксплуатационная оценка — давление</option><option value="sp36">СП 36.13330 — с минимумами по DN</option></select></label>
+        <label>Номинальный диаметр DN, <span class="unit">мм</span><input id="allowDN" type="number" min="1" step="1" value="1000"></label>
+        <label>Рабочее давление p, <span class="unit">МПа</span><input id="allowPressure" type="number" min="0" step="any" value="1.2"></label>
+        <label>Коэффициент нагрузки n<input id="allowN" type="number" min="0" step="any" value="1.1"></label>
+        <label>Нормативное сопротивление R₁н, <span class="unit">МПа</span><input id="allowR1n" type="number" min="0" step="any" value="510"></label>
+        <label>Коэффициент условий работы m<input id="allowM" type="number" min="0" step="any" value="0.99"></label>
+        <label>Коэффициент материала k₁<input id="allowK1" type="number" min="0" step="any" value="1.4"></label>
+        <label>Коэффициент ответственности kн<input id="allowKn" type="number" min="0" step="any" value="1.1"></label>
+        <label>Дополнительная прибавка C, <span class="unit">мм</span><input id="allowAddition" type="number" min="0" step="any" value="0"></label>
+      </div>
+      <div class="formula">R₁ = R₁н·m/(k₁·kн); &nbsp; δ<sub>p</sub> = n·p·D/[2(R₁+n·p)]; &nbsp; δ<sub>доп</sub> = max(δ<sub>p</sub>, δ<sub>DN</sub>, δ<sub>констр</sub>) + C</div>
+      <p class="small">В эксплуатационном режиме учитывается δp + C. В режиме СП 36 дополнительно учитываются 1/100 DN и конструктивный минимум. R₁н и коэффициенты следует брать из сертификата трубы, проекта и применимой редакции нормативного документа.</p>
+      <details class="note"><summary><b>Откуда берутся R₁н и коэффициенты</b></summary>
+        <div class="table-wrap nomax"><table>
+          <thead><tr><th>Параметр</th><th>Что означает</th><th>Источник значения</th></tr></thead>
+          <tbody>
+            <tr><td>R₁н</td><td>Нормативное сопротивление растяжению металла трубы, МПа. Принимается равным минимальному временному сопротивлению.</td><td>Сертификат трубы или стандарт/ТУ на трубу; СП 36.13330, п. 12.1.1.</td></tr>
+            <tr><td>m</td><td>Коэффициент условий работы, учитывающий категорию участка.</td><td>Таблица 1 СП 36: В — 0,660; I–II — 0,825; III–IV — 0,990.</td></tr>
+            <tr><td>k₁</td><td>Коэффициент надёжности по материалу — зависит от способа изготовления и объёма контроля трубы.</td><td>Таблица 10 СП 36: 1,34; 1,40; 1,47 или 1,55 по характеристике трубы.</td></tr>
+            <tr><td>kн</td><td>Коэффициент надёжности по ответственности трубопровода.</td><td>Таблица 12 СП 36 — выбирается по DN и рабочему давлению газопровода.</td></tr>
+            <tr><td>n</td><td>Коэффициент надёжности по нагрузке от внутреннего давления.</td><td>Таблица 14 СП 36; для внутреннего давления газопровода обычно 1,10.</td></tr>
+            <tr><td>C</td><td>Дополнительная суммарная прибавка, мм. Не является коэффициентом формулы (10) СП 36.</td><td>Только по проекту или применимому отраслевому документу: допуск заготовки, технологическое утонение, коррозия/эрозия. Без обоснования — 0.</td></tr>
+          </tbody>
+        </table></div>
+        <p class="small"><b>Не путать:</b> R₁н измеряется в МПа и характеризует прочность металла. R<sub>норм</sub> покрытия измеряется в Ом·м² и рассчитывается в разделе 2 из начального электрического сопротивления Rиз0 и коэффициента старения γ; в формулу толщины стенки оно не входит.</p>
+        <p class="small">Если коррозионный прогноз уже рассчитывается отдельно по скорости утонения, прибавку C на будущую коррозию обычно не вводят повторно без требования применяемой методики — иначе один и тот же износ может быть учтён дважды.</p>
+      </details>
+      <div class="actions"><button class="btn" id="calcAllowThickness">Рассчитать и подставить в прогноз</button></div>
+      <div id="allowError" class="error"></div>
+      <div class="result-grid mt14">
+        <div class="metric"><span>Расчётное сопротивление R₁</span><strong id="allowR1Out">—</strong></div>
+        <div class="metric"><span>Толщина по давлению δp</span><strong id="allowPressureOut">—</strong></div>
+        <div class="metric"><span>Минимум 1/100 DN</span><strong id="allowDnOut">—</strong></div>
+        <div class="metric"><span>Конструктивный минимум</span><strong id="allowConstructOut">—</strong></div>
+        <div class="metric"><span>Итоговая допустимая толщина</span><strong id="allowFinalOut">—</strong></div>
+        <div class="metric"><span>Запас фактической толщины</span><strong id="allowMarginOut">—</strong></div>
+      </div>
+      <h3>Толщина стенки и допустимые пределы</h3>
+      <div class="fields">
+        <label>Минимальная толщина сейчас, <span class="unit">мм</span><input id="corCurrentThk" type="number" min="0" step="any" value="10.5"></label>
+        <label>Минимально допустимая толщина, <span class="unit">мм</span><input id="corAllowThk" type="number" min="0" step="any" value="8"></label>
+        <label>Глубина дефекта сейчас, <span class="unit">мм</span><input id="corDepthNow" type="number" min="0" step="any" value="1.5"></label>
+        <label>Допустимая глубина дефекта, <span class="unit">мм</span><input id="corDepthAllow" type="number" min="0" step="any" value="4"></label>
+        <label>Горизонт прогноза, <span class="unit">лет</span><input id="corHorizon" type="number" min="0" step="any" value="5"></label>
+        <label>Прямое значение скорости, <span class="unit">мм/год</span><input id="corDirect" type="number" min="0" step="any" value="0.05"></label>
+      </div>
+      <h3>Данные предыдущего обследования</h3>
+      <div class="fields">
+        <label>Год предыдущего обследования<input id="corPrevYear" type="number" min="1900" max="2200" value="2021"></label>
+        <label>Толщина при предыдущем обследовании, <span class="unit">мм</span><input id="corPrevThk" type="number" min="0" step="any" value="10.9"></label>
+        <label>Глубина дефекта ранее, <span class="unit">мм</span><input id="corPrevDepth" type="number" min="0" step="any" value="1.1"></label>
+      </div>
+      <h3>Контрольный образец — метод потери массы</h3>
+      <div class="fields">
+        <label>Потеря массы Δm, <span class="unit">г</span><input id="couponLoss" type="number" min="0" step="any" value="0"></label>
+        <label>Площадь образца A, <span class="unit">см²</span><input id="couponArea" type="number" min="0" step="any" value="100"></label>
+        <label>Время экспозиции τ, <span class="unit">ч</span><input id="couponHours" type="number" min="0" step="any" value="8760"></label>
+        <label>Плотность металла, <span class="unit">г/см³</span><input id="couponDensity" type="number" min="0" step="any" value="7.85"></label>
+      </div>
+      <div class="formula">v<sub>экспл</sub> = (δ<sub>0</sub>−δ<sub>ф</sub>)/t; &nbsp; v<sub>меж</sub> = (δ<sub>пред</sub>−δ<sub>ф</sub>)/Δt; &nbsp; v<sub>деф</sub> = (c<sub>ф</sub>−c<sub>пред</sub>)/Δt; &nbsp; v<sub>мас</sub> = 8,76·10⁴Δm/(A·τ·ρ)</div>
+      <h3>Дополнительный расчёт язвенной (питтинговой) коррозии</h3>
+      <div class="fields three">
+        <label>Размер язвы по верхней кромке d, <span class="unit">мм</span><input id="pitSize" type="number" min="0" step="any" value="4"></label>
+        <label>Фактическое давление P, <span class="unit">МПа</span><input id="pitPressure" type="number" min="0" step="any" value="1.2"></label>
+        <label>Предел текучести σт, <span class="unit">МПа</span><input id="pitYield" type="number" min="0" step="any" value="216"></label>
+      </div>
+      <div class="formula">h<sub>кр</sub> = δ<sub>0</sub> − d·√(0,19P/(0,75σ<sub>т</sub>)); &nbsp; v<sub>к1</sub> = (v<sub>кор</sub> + d/t)/2; &nbsp; T<sub>ост.пит</sub> = (h<sub>кр</sub>−c<sub>ф</sub>)/v<sub>к1</sub></div>
+      <div class="actions"><button class="btn" id="calcCorrosion">Рассчитать коррозионный прогноз</button></div>
+      <div id="corrosionError" class="error"></div>
+      <div class="result-grid mt14">
+        <div class="metric"><span>За весь срок эксплуатации</span><strong id="corVService">—</strong></div>
+        <div class="metric"><span>Между обследованиями</span><strong id="corVBetween">—</strong></div>
+        <div class="metric"><span>По росту дефекта</span><strong id="corVDepth">—</strong></div>
+        <div class="metric"><span>По потере массы</span><strong id="corVCoupon">—</strong></div>
+        <div class="metric"><span>Принятая скорость</span><strong id="corVAccepted">—</strong></div>
+        <div class="metric"><span>Ресурс по толщине</span><strong id="corLifeThk">—</strong></div>
+        <div class="metric"><span>Ресурс по глубине дефекта</span><strong id="corLifeDepth">—</strong></div>
+        <div class="metric"><span>Ресурс при питтинге</span><strong id="corLifePit">—</strong></div>
+        <div class="metric"><span>Толщина через заданный срок</span><strong id="corForecastThk">—</strong></div>
+        <div class="metric"><span>Глубина через заданный срок</span><strong id="corForecastDepth">—</strong></div>
+        <div class="metric"><span>Консервативный остаточный ресурс</span><strong id="corLifeMin">—</strong></div>
+        <div class="metric"><span>Прогнозный год предела</span><strong id="corLimitYear">—</strong></div>
+      </div>
+    </section>
+
+    <section class="card" id="corrosionProtocolCard">
+      <h2>6. Подробный протокол коррозионного прогноза</h2>
+      <p class="note">Протокол формируется с подстановкой исходных данных в формулы. Его можно скопировать в текстовый редактор, сохранить как TXT или отдельно напечатать в PDF.</p>
+      <div id="corrosionProtocol" class="report">Выполните расчёт минимально допустимой толщины и коррозионный прогноз.</div>
+      <div class="actions"><button class="btn" id="makeCorrosionProtocol">Обновить протокол</button><button class="btn secondary" id="copyCorrosionProtocol">Копировать текст</button><button class="btn secondary" id="downloadCorrosionProtocol">Скачать TXT</button><button class="btn secondary" id="printCorrosionProtocol">Печать / PDF</button></div>
+    </section>
+
+    <section class="card">
+      <h2>7. Итоговый протокол</h2><div id="report" class="report">Выполните расчёты.</div>
+      <div class="actions"><button class="btn" id="allCalc">Рассчитать всё</button><button class="btn secondary" id="printBtn">Печать / PDF</button><button class="btn secondary" id="exportBtn">Экспорт JSON</button><button class="btn secondary" id="saveBtn">Сохранить ввод</button><button class="btn danger" id="resetBtn">Сбросить</button></div>
+      <p class="small">Инженерный расчёт требует проверки исходных данных и применимости нормативного документа ответственным специалистом. Программа не заменяет утверждённую методику обследования.</p>
+    </section>
+  </div>
+</main>
+<div id="siteLog" data-url="{% url 'forecast' %}" hidden>{% csrf_token %}</div>
+<script src="{% static 'maps/calculator.js' %}"></script>
+</body>
+</html>

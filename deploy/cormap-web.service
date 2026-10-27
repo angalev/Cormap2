@@ -1,0 +1,41 @@
+# Сайт коррозионных карт: gunicorn на unix-сокете (за nginx).
+# Метки @...@ подставляет install.sh.
+[Unit]
+Description=Сайт коррозионных карт (gunicorn)
+After=network.target postgresql.service cormap-web.socket
+Wants=postgresql.service
+Requires=cormap-web.socket
+
+[Service]
+Type=simple
+User=cormap
+Group=cormap
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=@ETC_DIR@/cormap.env
+# Сокет /run/cormap/gunicorn.sock создаёт systemd (cormap-web.socket) и передаёт
+# gunicorn готовым, поэтому --bind не задаётся: сокет доступен только nginx.
+ExecStart=@APP_DIR@/.venv/bin/gunicorn config.wsgi:application \
+    --workers 3 --timeout 120 \
+    --access-logfile - --error-logfile - --capture-output
+Restart=on-failure
+RestartSec=3
+
+# предел памяти сайта (доля ОЗУ сервера: при 50 ГБ это 5 ГБ); тяжёлую работу делает
+# обработчик
+MemoryMax=10%
+
+# усиление: служба не пишет код, пишет только в каталог данных
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=@DATA_DIR@
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

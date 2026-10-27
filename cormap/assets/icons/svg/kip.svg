@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4mm" height="12mm" viewBox="0 0 4 12">
+<title>Контрольно-измерительный пункт</title>
+<path d="M0.2,3.2 V1.9 L1.1,0.3 H2.9 L3.8,1.9 V3.2 Z" fill="#0070c0"/>
+<rect x="0.2" y="3.0" width="3.6" height="8.8" fill="#ffffff" stroke="#0070c0" stroke-width="0.35"/>
+<rect x="1.2" y="4.0" width="1.6" height="1.9" fill="#0070c0"/>
+<rect x="1.2" y="7.6" width="1.6" height="3.6" fill="#ffff00" stroke="#000000" stroke-width="0.2"/>
+</svg>

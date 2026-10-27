@@ -1,0 +1,11 @@
+{# Предел времени и кнопки «Отменить» / «Удалить карту», пока задание в работе (ТЗ, раздел 9) #}
+{% if job.limit_minutes %}
+<p class="muted">Предел времени — {{ job.limit_minutes|floatformat:"-1" }} мин: после этого {{ what }} останавливается автоматически.</p>
+{% endif %}
+{% if is_owner %}
+<form method="post" action="{% url 'map_cancel' job.pk %}" class="actions">
+  {% csrf_token %}
+  <button type="submit" class="btn">{{ label }}</button>
+  <a class="btn" href="{% url 'map_delete' job.pk %}">Удалить карту</a>
+</form>
+{% endif %}

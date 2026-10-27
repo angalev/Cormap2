@@ -1,0 +1,106 @@
+{% extends "maps/base.html" %}
+{% load static maps_extras %}
+{% block title %}Проверка — {{ job.object_name }}{% endblock %}
+{% block head %}
+{% if job.in_progress %}<noscript><meta http-equiv="refresh" content="5"></noscript>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row-between">
+  <h1>{{ job.object_name }}</h1>
+  <span class="badge {{ job.state|state_class }}" id="status-text">{{ job.status_text }}</span>
+</div>
+<p class="muted">Файл: {{ job.original_name }} · загружен {{ job.uploaded_at|date:"d.m.Y H:i" }}
+  {% if user.is_staff %}· владелец: {{ job.owner.get_username }}{% endif %}
+  {% if job.delete_after %}· будет удалена автоматически {{ job.delete_after|date:"d.m.Y" }}{% endif %}</p>
+
+<h2 class="step">Проверка и разбиение</h2>
+
+{% if job.in_progress %}
+<section class="card" id="poller" data-url="{% url 'map_status' job.pk %}">
+  <p><strong>Идёт проверка книги…</strong> Страница обновится сама.</p>
+  <progress></progress>
+  {% include "maps/_stall_hint.html" %}
+  <noscript><p>JavaScript выключен: страница обновляется раз в 5 секунд.</p></noscript>
+  {% include "maps/_cancel.html" with what="проверка" label="Отменить проверку" %}
+</section>
+{% else %}
+
+{% if job.state == 'check_failed' %}
+<section class="alert error" role="alert">
+  <p><strong>Построение невозможно.</strong> {{ job.error_text }}</p>
+  {% if is_owner %}
+  <p class="actions">
+    <a class="btn primary" href="{% url 'map_replace' job.pk %}">Загрузить исправленную книгу</a>
+  </p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% include "maps/_report.html" %}
+
+{% if split %}
+<section class="card">
+  <h2>Разбиение на листы</h2>
+  <p>Режим: <strong>{% if split.kind == 'auto' %}автоматический{% elif split.kind == 'length' %}одна длина листа{% else %}границы листов{% endif %}</strong>,
+     формат {{ split.paper }}, участков: <strong>{{ split.count }}</strong>
+     (листов в карте: {{ split.count }} × 2).</p>
+  {% if split_issues %}
+  <ul class="issues">
+    {% for i in split_issues %}<li class="issue warning">{{ i.message }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <div class="scroll tall">
+    <table class="grid compact">
+      <thead><tr>{% for h in split.header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in split.table %}
+        <tr{% if row.5 == 'да' %} class="bad"{% endif %}>{% for c in row %}<td{% if forloop.counter0 != 5 %} class="num"{% endif %}>{{ c }}</td>{% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if job.state == 'checked' and is_owner and split_form %}
+<section class="card">
+  <h2>Правка разбиения</h2>
+  <form method="post" action="{% url 'map_split' job.pk %}" class="form">
+    {% csrf_token %}
+    <div class="field radios{% if split_form.mode.errors %} has-error{% endif %}">
+      {% for radio in split_form.mode %}
+      <label class="radio">{{ radio.tag }} {{ radio.choice_label }}</label>
+      {% endfor %}
+    </div>
+    <div class="field{% if split_form.value.errors %} has-error{% endif %}">
+      <label for="{{ split_form.value.id_for_label }}">Значение</label>
+      {{ split_form.value }}
+      <small class="hint">Одна длина листа — например <code>2</code>. Границы — километры
+        по километражу (с учётом начального км), например <code>{{ split_form.example }}</code>.
+        Для режима «авто» поле не нужно.</small>
+      {% if current_bounds %}<small class="hint" id="current-bounds">Текущие границы: <code>{{ current_bounds }}</code></small>{% endif %}
+      {% for e in split_form.value.errors %}<small class="err">{{ e }}</small>{% endfor %}
+      {% for e in split_form.mode.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Пересчитать разбиение</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <form method="post" action="{% url 'map_build' job.pk %}" class="actions">
+    {% csrf_token %}
+    <button type="submit" class="btn primary">Построить карту</button>
+    <a class="btn" href="{% url 'map_replace' job.pk %}">Загрузить исправленную книгу</a>
+  </form>
+</section>
+{% endif %}
+
+{% endif %}
+
+{% if is_owner and not job.in_progress %}
+<p><a href="{% url 'map_delete' job.pk %}">Удалить карту</a></p>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if job.in_progress %}<script src="{% static 'maps/poll.js' %}"></script>{% endif %}{% endblock %}

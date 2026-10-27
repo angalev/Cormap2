@@ -1,0 +1,45 @@
+{% extends "maps/base.html" %}
+{% load maps_extras %}
+{% block title %}Мои карты — Коррозионные карты{% endblock %}
+{% block content %}
+<div class="row-between">
+  <h1>{% if user.is_staff %}Все карты{% else %}Мои карты{% endif %}</h1>
+  <a class="btn primary" href="{% url 'map_new' %}">Новая карта</a>
+</div>
+{% if jobs %}
+{% if keep_days %}<p class="muted">Карты хранятся {{ keep_days }} сут. с даты создания, затем удаляются автоматически вместе с книгой и файлами. Скачайте нужные файлы заранее.</p>{% endif %}
+<table class="grid">
+  <thead>
+    <tr>
+      <th>№</th><th>Наименование</th><th>Файл</th><th>Дата</th>
+      {% if user.is_staff %}<th>Владелец</th>{% endif %}
+      <th>Состояние</th><th>Будет удалена</th><th>Ссылки</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for job in jobs %}
+    <tr>
+      <td>{{ job.pk }}</td>
+      <td><a href="{% url 'map_detail' job.pk %}">{{ job.object_name }}</a></td>
+      <td>{{ job.original_name }}</td>
+      <td>{{ job.created_at|date:"d.m.Y H:i" }}</td>
+      {% if user.is_staff %}<td>{{ job.owner.get_username }}</td>{% endif %}
+      <td><span class="badge {{ job.state|state_class }}">{{ job.status_text }}</span></td>
+      <td>{{ job.delete_after|date:"d.m.Y"|default:"—" }}</td>
+      <td class="links">
+        <a href="{% url 'map_detail' job.pk %}">Открыть</a>
+        {% if job.state == 'done' %}
+          <a href="{% url 'map_file_pdf' job.pk %}">PDF</a>
+        {% endif %}
+        {% if job.owner_id == user.pk %}
+          <a href="{% url 'map_delete' job.pk %}">Удалить</a>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Карт пока нет. <a href="{% url 'map_new' %}">Создайте первую.</a></p>
+{% endif %}
+{% endblock %}

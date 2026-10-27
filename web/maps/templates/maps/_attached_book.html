@@ -1,0 +1,5 @@
+{# Книга, отложенная при прошлой отправке формы: выбирать её заново не нужно (ТЗ, 4.2) #}
+{% if attached_book %}
+<p class="attached" id="attached-book">Прикреплён файл: <strong>{{ attached_book.name }}</strong>
+  ({{ attached_book.size|filesizeformat }}). Выбирать его заново не нужно; чтобы заменить, выберите другой файл.</p>
+{% endif %}

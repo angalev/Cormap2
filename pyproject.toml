@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cormap"
+version = "0.1.0"
+description = "Построение коррозионных карт (приложение № 11)"
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1",
+    # openpyxl сам берёт defusedxml, если он установлен: защита разбора XML чужих книг
+    "defusedxml>=0.7.1",
+    "matplotlib>=3.8",
+    "Pillow>=10",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# resvg-py нужен только для сборки PNG значков (tools/build_assets.py)
+dev = ["pytest>=8", "pytest-django>=4.8", "ruff>=0.5", "resvg-py>=0.2"]
+# сайт (этап 8): Django; запускается из каталога кода (web/, manage.py), не из пакета
+web = ["Django>=5.2,<5.3"]
+# сервер (этап 9): драйвер PostgreSQL и gunicorn; ставятся вместе с web
+server = ["psycopg[binary]>=3.2", "gunicorn>=23"]
+
+[tool.setuptools.packages.find]
+include = ["cormap*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# cormap/refinery.py - модуль заказчика (ТЗ 4.5): не проверяется и не правится
+extend-exclude = ["starter", ".venv", "web/maps/migrations", "cormap/refinery.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "web/tests"]
+pythonpath = [".", "web", "web/tests"]
+# config.settings с явно включённым локальным режимом (CORMAP_DEBUG=1)
+DJANGO_SETTINGS_MODULE = "settings_for_tests"
+# медленные тесты по умолчанию не запускаются; включаются: pytest -m slow
+addopts = "-m \"not slow\""
+markers = ["slow: долгие тесты (трасса 300 км); запуск: pytest -m slow"]
+
+[tool.setuptools.package-data]
+cormap = [
+    "assets/settings/*.toml",
+    "assets/icons/svg/*.svg",
+    "assets/icons/png/*.png",
+    "assets/textures/*/*.png",
+]
